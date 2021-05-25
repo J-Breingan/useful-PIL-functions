@@ -4,7 +4,7 @@ Created on Mon May 24 20:54:08 2021
 
 @author: Jack
 """
-from PIL import Image
+from PIL import Image, ImageDraw
 
 def polygonal_paste(image_1, image_2, polygon_1, polygon_2):
     """
@@ -107,3 +107,41 @@ def concat_matrix(images):
         y += img_y
         
     return bg
+
+def corner_image(main, top):
+    """
+    Take a background image (main) and an icon (top), and add the icon to the
+    top corner of the shape. Unlike polygonal paste, this resizes the top image
+    instead of cutting a section of it. Images should be the same size, though
+    it is technically possible for this function to work on some combinations 
+    of sizes
+
+    Args
+    --------------------
+    main: The background image, which will occupy 75% of the output image
+    top: The image to become the top left icon in the final output
+
+    """
+    
+    smalltop = Image.new("L", main.size, 255)
+    smalltop.paste(top.resize((int(main.size[0]/2),int(main.size[1]/2))))
+    
+    #create mask
+    im_a = Image.new("L", main.size, 0)#.convert("RGB")
+    draw = ImageDraw.Draw(im_a)
+    bigpoly = [(int(main.size[0]/2), 0),
+               (main.size[0], 0),
+               (main.size[0], main.size[1]),
+               (0,main.size[1]), 
+               (0, int(main.size[1]/2)),
+               (int(main.size[0]/2), int(main.size[1]/2))]
+    draw.polygon(bigpoly, fill=255)
+
+    #mask image with transparency
+    im_alpha = main.copy().convert("RGB")
+    im_alpha.putalpha(im_a)
+
+    #merge the images
+    smalltop.paste(im_alpha, (0,0), im_alpha)
+    
+    return smalltop
